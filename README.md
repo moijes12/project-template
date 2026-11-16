@@ -10,7 +10,7 @@ Describe the problem, who it affects, and why this project exists.
 
 ## Quick start
 
-Clone the repository, install the pinned tools listed below, copy `.env.example` to `.env`, then run `just setup` and `just test`.
+Clone the repository, install the pinned tools listed below or open it in the included devcontainer, then run `just setup` and `just test`; copy `.env.example` to `.env` before using the root Compose database.
 
 ## Design
 
