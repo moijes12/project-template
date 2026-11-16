@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v7: https://github.com/actions/checkout/releases
+      - uses: actions/checkout@v7
+      # actions/setup-go v7: https://github.com/actions/setup-go/releases
+      - uses: actions/setup-go@v7
+        if: hashFiles('go/go.mod') != ''
+        with:
+          go-version-file: go/go.mod
+          cache: false
+      # actions/cache v6: https://github.com/actions/cache/releases
+      - uses: actions/cache@v6
+        if: hashFiles('go/go.mod') != ''
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ runner.os }}-${{ hashFiles('go/go.mod') }}
+      - name: Install pinned Rust toolchain
+        if: hashFiles('rust/Cargo.toml') != ''
+        run: rustup toolchain install 1.100.0 --profile minimal --component clippy --component rustfmt
+      - name: Cache Rust dependencies
+        if: hashFiles('rust/Cargo.toml') != ''
+        # actions/cache v6: https://github.com/actions/cache/releases
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/cache
+            ~/.cargo/registry/src
+            ~/.cargo/git/db
+            rust/target
+          key: rust-${{ runner.os }}-${{ hashFiles('rust/Cargo.lock') }}
+      - name: Lint Go
+        if: hashFiles('go/go.mod') != ''
+        run: (cd go && go vet ./...)
+      - name: Check Go formatting
+        if: hashFiles('go/go.mod') != ''
+        run: test -z "$(gofmt -l go)"
+      - name: Check Rust formatting
+        if: hashFiles('rust/Cargo.toml') != ''
+        run: cargo +1.100.0 fmt --manifest-path rust/Cargo.toml --all -- --check
+      - name: Lint Rust
+        if: hashFiles('rust/Cargo.toml') != ''
+        run: cargo +1.100.0 clippy --manifest-path rust/Cargo.toml --all-targets -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v7: https://github.com/actions/checkout/releases
+      - uses: actions/checkout@v7
+      # actions/setup-go v7: https://github.com/actions/setup-go/releases
+      - uses: actions/setup-go@v7
+        if: hashFiles('go/go.mod') != ''
+        with:
+          go-version-file: go/go.mod
+          cache: false
+      # actions/cache v6: https://github.com/actions/cache/releases
+      - uses: actions/cache@v6
+        if: hashFiles('go/go.mod') != ''
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ runner.os }}-${{ hashFiles('go/go.mod') }}
+      - name: Install pinned Rust toolchain
+        if: hashFiles('rust/Cargo.toml') != ''
+        run: rustup toolchain install 1.100.0 --profile minimal
+      - name: Cache Rust dependencies
+        if: hashFiles('rust/Cargo.toml') != ''
+        # actions/cache v6: https://github.com/actions/cache/releases
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/cache
+            ~/.cargo/registry/src
+            ~/.cargo/git/db
+            rust/target
+          key: rust-${{ runner.os }}-${{ hashFiles('rust/Cargo.lock') }}
+      - name: Test Go
+        if: hashFiles('go/go.mod') != ''
+        run: (cd go && go test ./...)
+      - name: Test Rust
+        if: hashFiles('rust/Cargo.toml') != ''
+        run: cargo +1.100.0 test --manifest-path rust/Cargo.toml
+
+  benchmark:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v7: https://github.com/actions/checkout/releases
+      - uses: actions/checkout@v7
+      # actions/setup-go v7: https://github.com/actions/setup-go/releases
+      - uses: actions/setup-go@v7
+        if: hashFiles('go/go.mod') != ''
+        with:
+          go-version-file: go/go.mod
+          cache: false
+      # actions/cache v6: https://github.com/actions/cache/releases
+      - uses: actions/cache@v6
+        if: hashFiles('go/go.mod') != ''
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ runner.os }}-${{ hashFiles('go/go.mod') }}
+      - name: Install pinned Rust toolchain
+        if: hashFiles('rust/Cargo.toml') != ''
+        run: rustup toolchain install 1.100.0 --profile minimal
+      - name: Cache Rust dependencies
+        if: hashFiles('rust/Cargo.toml') != ''
+        # actions/cache v6: https://github.com/actions/cache/releases
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry/cache
+            ~/.cargo/registry/src
+            ~/.cargo/git/db
+            rust/target
+          key: rust-${{ runner.os }}-${{ hashFiles('rust/Cargo.lock') }}
+      - name: Collect and run benchmarks
+        run: |
+          mkdir -p benchmarks/results
+          {
+            echo "# Benchmark results"
+            echo
+            echo "- Hardware: $(grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | xargs); $(nproc) CPUs"
+            echo "- OS: $(uname -srvmo)"
+            echo "- Dataset and size: none (toolchain proof skeleton)"
+            echo "- Date: $(date -u +%F)"
+            echo "- Git commit: $(git rev-parse HEAD)"
+            if [ -d go ]; then
+              echo
+              echo "## Go"
+              echo
+              echo 'Exact command: `cd go && go test -run '\''^$'\'' -bench=. -benchmem ./...`'
+              echo
+              echo '```text'
+              (cd go && go test -run '^$' -bench=. -benchmem ./...)
+              echo '```'
+            fi
+            if [ -d rust ]; then
+              echo
+              echo "## Rust"
+              echo
+              echo 'Exact command: `cargo +1.100.0 bench --manifest-path rust/Cargo.toml --bench baseline`'
+              echo
+              echo '```text'
+              cargo +1.100.0 bench --manifest-path rust/Cargo.toml --bench baseline
+              echo '```'
+            fi
+          } | tee "benchmarks/results/benchmark-${GITHUB_SHA}.md"
+      - name: Upload benchmark results
+        # actions/upload-artifact v7: https://github.com/actions/upload-artifact/releases
+        uses: actions/upload-artifact@v7
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: benchmarks/results/benchmark-${{ github.sha }}.md
+          if-no-files-found: error
