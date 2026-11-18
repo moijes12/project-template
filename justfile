@@ -27,7 +27,7 @@ db-down:
     docker compose -f .devcontainer/docker-compose.yml down
 
 psql:
-    docker compose -f .devcontainer/docker-compose.yml exec db psql -U postgres -d postgres
+    psql -h localhost -p 5432 -U postgres -d postgres
 
 clean:
     if [ -d go ]; then (cd go && go clean); else echo "Skipping Go: go/ is absent."; fi
