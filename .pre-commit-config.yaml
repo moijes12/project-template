@@ -1,0 +1,46 @@
+minimum_pre_commit_version: "4.7.0"
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: shellcheck
+        name: shellcheck
+        entry: shellcheck
+        language: system
+        types: [shell]
+      - id: gofmt
+        name: gofmt
+        entry: bash -c 'if [ -d go ]; then gofmt -w go/*.go; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: go-vet
+        name: go vet
+        entry: bash -c 'if [ -d go ]; then cd go && go vet ./...; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: cargo-fmt
+        name: cargo fmt
+        entry: bash -c 'if [ -f rust/Cargo.toml ]; then cargo fmt --manifest-path rust/Cargo.toml -- --check; fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: cargo-clippy
+        name: cargo clippy
+        entry: bash -c 'if [ -f rust/Cargo.toml ]; then cargo clippy --all-targets --manifest-path rust/Cargo.toml -- -D warnings; fi'
+        language: system
+        pass_filenames: false
+        always_run: true

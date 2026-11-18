@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      # actions/setup-go v7.1.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5
+        if: hashFiles('go/go.mod') != ''
+        with:
+          go-version-file: go/go.mod
+          cache: true
+      # actions-rust-lang/setup-rust-toolchain v2.0.1 (includes Cargo caching)
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30
+        if: hashFiles('rust/Cargo.toml') != ''
+        with:
+          toolchain: 1.100.0
+          components: clippy, rustfmt
+      - name: Lint Go
+        if: hashFiles('go/go.mod') != ''
+        run: |
+          test -z "$(gofmt -l go)"
+          (cd go && go vet ./...)
+      - name: Lint Rust
+        if: hashFiles('rust/Cargo.toml') != ''
+        run: |
+          cargo fmt --manifest-path rust/Cargo.toml -- --check
+          cargo clippy --all-targets --manifest-path rust/Cargo.toml -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      # actions/setup-go v7.1.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5
+        if: hashFiles('go/go.mod') != ''
+        with:
+          go-version-file: go/go.mod
+          cache: true
+      # actions-rust-lang/setup-rust-toolchain v2.0.1 (includes Cargo caching)
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30
+        if: hashFiles('rust/Cargo.toml') != ''
+        with:
+          toolchain: 1.100.0
+      - name: Test Go
+        if: hashFiles('go/go.mod') != ''
+        run: cd go && go test ./...
+      - name: Test Rust
+        if: hashFiles('rust/Cargo.toml') != ''
+        run: cargo test --manifest-path rust/Cargo.toml
+
+  benchmark:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      # actions/setup-go v7.1.0
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5
+        if: hashFiles('go/go.mod') != ''
+        with:
+          go-version-file: go/go.mod
+          cache: true
+      # actions-rust-lang/setup-rust-toolchain v2.0.1 (includes Cargo caching)
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30
+        if: hashFiles('rust/Cargo.toml') != ''
+        with:
+          toolchain: 1.100.0
+      - name: Run benchmarks and record environment
+        run: |
+          {
+            echo "Hardware: $(uname -m)"
+            echo "OS: $(. /etc/os-release && echo "$PRETTY_NAME")"
+            echo "Dataset and size: N/A (starter smoke benchmarks)"
+            echo "Exact command (Go, if present): (cd go && go test -bench=. ./...)"
+            echo "Exact command (Rust, if present): cargo bench --manifest-path rust/Cargo.toml"
+            echo "Date (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "Git commit: $GITHUB_SHA"
+            echo "Result:"
+            if [ -f go/go.mod ]; then
+              (cd go && go test -bench=. ./...)
+            fi
+            if [ -f rust/Cargo.toml ]; then
+              cargo bench --manifest-path rust/Cargo.toml
+            fi
+          } | tee benchmark-results.txt
+      # actions/upload-artifact v7.0.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: benchmark-results-${{ github.sha }}
+          path: benchmark-results.txt
