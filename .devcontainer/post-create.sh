@@ -2,8 +2,8 @@
 set -e -x
 
 echo "Running post-create.sh"
-echo 'export PATH="$HOME/.duckdb/cli/latest:$PATH"' >> ~/.bashrc
-source ~/.bashrc
+printf '%s\n' "export PATH=\"\$HOME/.duckdb/cli/latest:\$PATH\"" >> "$HOME/.bashrc"
+export PATH="$HOME/.duckdb/cli/latest:$PATH"
 duckdb --version
 just --version
 python --version

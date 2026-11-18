@@ -19,7 +19,3 @@ RUN apt-get install -y --no-install-recommends postgresql-client && apt-get clea
 RUN pip install --upgrade pip
 RUN curl -s https://install.duckdb.org | bash
 #     && apt-get -y install --no-install-recommends <your-package-list-here>
-
-
-
-

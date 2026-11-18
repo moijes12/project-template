@@ -1,0 +1,35 @@
+# Go
+*.test
+/go/coverage.out
+/go/coverage.html
+
+# Rust
+/rust/target/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Local data
+data/
+*.parquet
+*.csv
+*.duckdb
+
+# Operating systems
+.DS_Store
+Thumbs.db
+Desktop.ini
