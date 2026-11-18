@@ -10,7 +10,8 @@
 			"moby": false
 		},
 		"ghcr.io/devcontainers/features/go:1": {},
-		"ghcr.io/devcontainers/features/rust:1": {}
+		"ghcr.io/devcontainers/features/rust:1": {},
+		"ghcr.io/devcontainers/features/github-cli": {}
 	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
