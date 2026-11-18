@@ -20,12 +20,6 @@ bench:
     if [ -d go ]; then (cd go && go test -bench=. ./...); else echo "Skipping Go: go/ is absent."; fi
     if [ -d rust ]; then cargo bench --manifest-path rust/Cargo.toml; else echo "Skipping Rust: rust/ is absent."; fi
 
-db-up:
-    docker compose -f .devcontainer/docker-compose.yml up -d --wait db
-
-db-down:
-    docker compose -f .devcontainer/docker-compose.yml down
-
 psql:
     psql -h localhost -p 5432 -U postgres -d postgres
 
