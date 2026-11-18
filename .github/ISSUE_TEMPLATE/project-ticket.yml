@@ -1,0 +1,34 @@
+name: Project ticket
+description: Propose or track a learning-project task.
+title: "[Project] "
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What
+      description: What should be built or learned?
+    validations:
+      required: true
+  - type: textarea
+    id: hints
+    attributes:
+      label: Hints
+      description: Useful context, references, or starting points.
+  - type: textarea
+    id: pitfalls
+    attributes:
+      label: Pitfalls
+      description: Likely risks, edge cases, or failure modes.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What observable conditions make this complete?
+    validations:
+      required: true
+  - type: checkboxes
+    id: stuck
+    attributes:
+      label: Stuck?
+      options:
+        - label: I am stuck and would like help.
