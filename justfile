@@ -21,13 +21,13 @@ bench:
     if [ -d rust ]; then cargo bench --manifest-path rust/Cargo.toml; else echo "Skipping Rust: rust/ is absent."; fi
 
 db-up:
-    docker compose up -d --wait
+    docker compose -f .devcontainer/docker-compose.yml up -d --wait db
 
 db-down:
-    docker compose down
+    docker compose -f .devcontainer/docker-compose.yml down
 
 psql:
-    docker compose exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+    docker compose -f .devcontainer/docker-compose.yml exec db psql -U postgres -d postgres
 
 clean:
     if [ -d go ]; then (cd go && go clean); else echo "Skipping Go: go/ is absent."; fi
